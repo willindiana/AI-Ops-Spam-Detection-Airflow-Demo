@@ -3,31 +3,29 @@
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 
+import helper
+import model_1
+import model_2
+import model_3
 
 # Reading the data
-df = pd.read_csv("./content/spam.csv",encoding='latin-1')
+df = pd.read_csv("./content/spam.csv", encoding='latin-1')
 df.head()
 
-df = df.drop(['Unnamed: 2','Unnamed: 3','Unnamed: 4'],axis=1)
-df = df.rename(columns={'v1':'label','v2':'Text'})
-df['label_enc'] = df['label'].map({'ham':0,'spam':1})
+df = df.drop(['Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4'], axis=1)
+df = df.rename(columns={'v1': 'label', 'v2': 'Text'})
+df['label_enc'] = df['label'].map({'ham': 0, 'spam': 1})
 df.head()
-
 
 sns.countplot(x=df['label'])
 # plt.show()
 
 
 # Find average number of tokens in all sentences
-avg_words_len=round(sum([len(i.split()) for i in df['Text']])/len(df['Text']))
+avg_words_len = round(sum([len(i.split()) for i in df['Text']]) / len(df['Text']))
 print(avg_words_len)
-
 
 # Finding Total no of unique words in corpus
 s = set()
@@ -36,7 +34,6 @@ for sent in df['Text']:
         s.add(word)
 total_words_length = len(s)
 print(total_words_length)
-
 
 # Splitting data for Training and testing
 from sklearn.model_selection import train_test_split
@@ -63,7 +60,7 @@ print(nb_accuracy)
 print(classification_report(y_test, baseline_model.predict(X_test_vec)))
 
 # Confusion matrix for the baseline model
-from sklearn.metrics import confusion_matrix,  ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
 # Get predictions from the model
@@ -81,15 +78,15 @@ cm_display.plot(cmap=plt.cm.Blues)
 plt.title("Confusion Matrix")
 # plt.show()
 
+# Model Set-Ups
 
-# Model 1: Creating custom Text vectorization and embedding layers:
-print("RUNNING Model 1: Creating custom Text vectorization and embedding layers")
-from tensorflow.keras.layers import TextVectorization
+from tensorflow.keras import layers
+
 
 MAXTOKENS = total_words_length
 OUTPUTLEN = avg_words_len
 
-text_vec = TextVectorization(
+text_vec = layers.TextVectorization(
     max_tokens=MAXTOKENS,
     standardize='lower_and_strip_punctuation',
     output_mode='int',
@@ -106,133 +103,36 @@ embedding_layer = layers.Embedding(
     input_length=OUTPUTLEN
 )
 
-# Now, let’s build and compile model 1 using the Tensorflow Functional API
-input_layer = layers.Input(shape=(1,), dtype=tf.string)
-vec_layer = text_vec(input_layer)
-embedding_layer_model = embedding_layer(vec_layer)
-x = layers.GlobalAveragePooling1D()(embedding_layer_model)
-x = layers.Flatten()(x)
-x = layers.Dense(32, activation='relu')(x)
-output_layer = layers.Dense(1, activation='sigmoid')(x)
-model_1 = keras.Model(input_layer, output_layer)
-
-model_1.compile(optimizer='adam', loss=keras.losses.BinaryCrossentropy(
-    label_smoothing=0.5), metrics=['accuracy'])
-
+# Model 1
+model_1 = model_1.build(text_vec, embedding_layer)
 # Summary of the model 1
 model_1.summary()
-
-history_1 = model_1.fit(X_train, y_train, epochs=5, validation_data=(X_test, y_test), validation_steps=int(0.2*len(X_test)))
-
+history_1 = model_1.fit(X_train, y_train, 5, validation_data=(X_test, y_test), validation_steps=int(0.2 * len(X_test)))
 pd.DataFrame(history_1.history).plot()
 
 # plt.show()
 
-
-# Let’s create helper functions for compiling, fitting, and evaluating the model performance.
-from sklearn.metrics import precision_score, recall_score, f1_score
-
-
-def compile_model(model):
-    '''
-    simply compile the model with adam optimzer
-    '''
-    model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryCrossentropy(),
-                  metrics=['accuracy'])
-
-
-def fit_model(model, epochs, X_train=X_train, y_train=y_train,
-              X_test=X_test, y_test=y_test):
-    '''
-    fit the model with given epochs, train
-    and test data
-    '''
-    history = model.fit(X_train,
-                        y_train,
-                        epochs=epochs,
-                        validation_data=(X_test, y_test),
-                        validation_steps=int(0.2 * len(X_test)))
-    return history
-
-
-def evaluate_model(model, X, y):
-    '''
-    evaluate the model and returns accuracy,
-    precision, recall and f1-score
-    '''
-    y_preds = np.round(model.predict(X))
-    accuracy = accuracy_score(y, y_preds)
-    precision = precision_score(y, y_preds)
-    recall = recall_score(y, y_preds)
-    f1 = f1_score(y, y_preds)
-
-    model_results_dict = {'accuracy': accuracy,
-                          'precision': precision,
-                          'recall': recall,
-                          'f1-score': f1}
-
-    return model_results_dict
-
-
-# Model -2 Bidirectional LSTM
-print("RUNNING Model -2 Bidirectional LSTM")
-
-input_layer = layers.Input(shape=(1,), dtype=tf.string)
-vec_layer = text_vec(input_layer)
-embedding_layer_model = embedding_layer(vec_layer)
-bi_lstm = layers.Bidirectional(layers.LSTM(
-    64, activation='tanh', return_sequences=True))(embedding_layer_model)
-lstm = layers.Bidirectional(layers.LSTM(64))(bi_lstm)
-flatten = layers.Flatten()(lstm)
-dropout = layers.Dropout(.1)(flatten)
-x = layers.Dense(32, activation='relu')(dropout)
-output_layer = layers.Dense(1, activation='sigmoid')(x)
-model_2 = keras.Model(input_layer, output_layer)
-
-compile_model(model_2)  # compile the model
-history_2 = fit_model(model_2, epochs=5)  # fit the model
-
+# Model 2
+model_2 = model_2.build(text_vec, embedding_layer)
+# Summary of model 2
 model_2.summary()
-
+history_2 = helper.fit_model(model_2, 5, X_train, y_train, X_test, y_test)  # fit the model
 pd.DataFrame(history_2.history).plot()
 
-# Model -3 Transfer Learning with USE Encoder
-print("RUNNING Model -3 Transfer Learning with USE Encoder")
-
-import tensorflow_hub as hub
-
-# model with Sequential api
-model_3 = keras.Sequential()
-
-# universal-sentence-encoder layer
-# directly from tfhub
-use_layer = hub.KerasLayer("https://tfhub.dev/google/universal-sentence-encoder/4",
-                           trainable=False,
-                           input_shape=[],
-                           dtype=tf.string,
-                           name='USE')
-model_3.add(use_layer)
-model_3.add(layers.Dropout(0.2))
-model_3.add(layers.Dense(64, activation=keras.activations.relu))
-model_3.add(layers.Dense(1, activation=keras.activations.sigmoid))
-
-compile_model(model_3)
-
-history_3 = fit_model(model_3, epochs=5)
-
+# Model 3
+model_3 = model_3.build()
+# Summary of model 2
 model_3.summary()
-
+history_3 = helper.fit_model(model_3, 5, X_train, y_train, X_test, y_test)
 pd.DataFrame(history_3.history).plot()
-
 
 # Analyzing our Model Performance
 
 
-baseline_model_results = evaluate_model(baseline_model, X_test_vec, y_test)
-model_1_results = evaluate_model(model_1, X_test, y_test)
-model_2_results = evaluate_model(model_2, X_test, y_test)
-model_3_results = evaluate_model(model_3, X_test, y_test)
+baseline_model_results = helper.evaluate_model(baseline_model, X_test_vec, y_test)
+model_1_results = helper.evaluate_model(model_1, X_test, y_test)
+model_2_results = helper.evaluate_model(model_2, X_test, y_test)
+model_3_results = helper.evaluate_model(model_3, X_test, y_test)
 
 total_results = pd.DataFrame({'MultinomialNB Model': baseline_model_results,
                               'Custom-Vec-Embedding Model': model_1_results,
@@ -242,7 +142,6 @@ total_results = pd.DataFrame({'MultinomialNB Model': baseline_model_results,
 print(f"Model Comparison Total Results:")
 print(total_results)
 
-
 pd.DataFrame(total_results).plot()
 
-plt.show()
+# plt.show()
