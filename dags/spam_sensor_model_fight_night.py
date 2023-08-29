@@ -1,5 +1,11 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+import pendulum
+
+from spam_detection import helper
+from spam_detection import model_1
+from spam_detection import model_2
+from spam_detection import model_3
 
 from datetime import datetime, timedelta
 
@@ -26,26 +32,49 @@ def get_age(ti):
     ti.xcom_push(key='age', value=29)
 
 
-with DAG(
-        default_args=default_args,
-        dag_id='first_dag_v01',
-        description='Our first dag using python operator',
-        start_date=datetime(2023, 8, 20),
-        schedule_interval='@daily'
-) as dag:
-    task1 = PythonOperator(
-        task_id='greet',
-        python_callable=greet,
-    )
+import datetime
+import json
+from airflow.decorators import dag, task
 
-    task2 = PythonOperator(
-        task_id="get_name",
-        python_callable=get_name,
-    )
 
-    task3 = PythonOperator(
-        task_id="get_age",
-        python_callable=get_age,
-    )
+@dag(
+    schedule=None,
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+)
+def spam_sms_dag_v3():
+    @task()
+    def download_dataset():
+        print("Download Dataset")
+        helper.download_dataset()
 
-    [task2, task3] >> task1
+    @task()
+    def train_model_1():
+        print("TODO train_model_1 ")
+
+    @task()
+    def train_model_2():
+        print("TODO train_model_2 ")
+
+    @task()
+    def train_model_3():
+        print("TODO train_model_3 ")
+
+    @task()
+    def compare_models():
+        print("Todod Compare models")
+
+    @task()
+    def deploy_winner():
+        print("todo Deploy winner")
+
+    download_dataset() >> [train_model_1(), train_model_2(), train_model_3()] >> compare_models() >> deploy_winner()
+
+spam_sms_dag_v3()
+
+
+# Aiflow DAG stages:
+# 1. Download dataset
+# 2. Train each of the three models in parallel
+# 3. Compare the models
+# 4. Deploy the winner

@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 from sklearn.metrics import classification_report, accuracy_score
-
+import time
 
 def compile_model(model):
     '''
@@ -46,3 +46,12 @@ def evaluate_model(model, X, y):
                           'f1-score': f1}
 
     return model_results_dict
+
+
+def smoke_test():
+    print("Hello World")
+
+
+def download_dataset():
+    print("Placeholder for actually downloading the dataset")
+    time.sleep(3)

@@ -19,6 +19,7 @@ Aiflow DAG stages:
 
 Steps to run 
 1. export AIRFLOW_HOME=/home/will/Projects/AIOpsDemo
+2. 
 2. Run `airflow standalone`
 
 
