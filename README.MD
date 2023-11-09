@@ -1,4 +1,16 @@
+# SMS Spam Detection Airflow Training DAG
 
+## Summary
+
+The following project demonstrates the use of apache airflow
+train three different models for SMS spam detection,
+compare their performance, and declare a winner.
+
+The dataset used can be found here
+https://www.kaggle.com/datasets/uciml/sms-spam-collection-dataset
+
+The three models trained were taken from this tutorial
+https://www.geeksforgeeks.org/sms-spam-detection-using-tensorflow-in-python/
 
 ## Gameplan
 
@@ -17,13 +29,13 @@ Aiflow DAG stages:
 4. Declare the winner - DONE
 
 
-Steps to run 
+## Steps to run 
 ```bash
 export AIRFLOW_HOME=/home/will/Projects/AIOpsDemo
 airflow standalone
 ```
 
-# Model Performance Expectations
+## Model Performance Expectations
 Model Comparison Total Results:
 
 | Model Name                   | accuracy   | precision | recall    | f1-score|
